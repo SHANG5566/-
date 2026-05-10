@@ -1,101 +1,234 @@
-<!-- 手機版建議儲存為 tracker-mobile.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>能力統計表-手機版</title>
+    <title>能力統計表 - 手機版</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f7; padding: 15px; margin: 0; }
-        .container { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        h2 { text-align: center; font-size: 24px; margin-bottom: 20px; color: #1a1a1a; }
-        
-        .counter-row {
-            display: flex; align-items: center; background: #fff;
-            padding: 15px 10px; margin-bottom: 10px;
-            border-radius: 12px; border: 1px solid #eee;
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
         }
-        .item-input { flex-grow: 1; border: none; font-size: 18px; outline: none; width: 40%; }
-        
-        .controls-group { display: flex; align-items: center; gap: 8px; }
-        .num-input { border: none; text-align: center; font-size: 20px; outline: none; background: transparent; width: 45px; }
-        .current-input { font-weight: bold; color: #007AFF; }
-        .max-input { color: #888; }
-        
-        /* 手機版加大按鈕，方便觸控 */
-        .arrow-buttons { display: flex; flex-direction: column; gap: 4px; }
-        .arrow-btn {
-            background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px;
-            width: 35px; height: 30px; font-size: 16px; color: #555;
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .divider { font-size: 20px; color: #ccc; }
-        
-        .btn-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .action-btn { height: 55px; border-radius: 12px; border: none; font-size: 18px; cursor: pointer; }
-        .add-btn { background: #007AFF; color: white; }
-        .clear-btn { background: #eee; color: #666; }
-        .del-btn { margin-left: 10px; font-size: 20px; border: none; background: none; color: #ddd; }
+
+        h2 { 
+            font-size: 1.4rem;
+            color: #333; 
+            margin: 10px 0 20px 0; 
+            font-weight: 800;
+        }
+
+        /* 手機網格：一排兩個，間距縮小以節省空間 */
+        #stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column; /* 手機版改為上下結構更省空間 */
+            position: relative;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            touch-action: none; /* 重要：防止拖拽時頁面捲動 */
+        }
+
+        /* 頂部：手把與刪除按鈕 */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        .drag-handle {
+            color: #ccc;
+            font-size: 18px;
+            padding: 0 5px;
+            cursor: move;
+        }
+
+        .btn-del {
+            background: #fdf0f0;
+            color: #e74c3c;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 中間：名稱輸入 */
+        .name-input {
+            border: none;
+            border-bottom: 1px solid #eee;
+            background: transparent;
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: #333;
+            width: 100%;
+            padding: 4px 0;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .name-input:focus { outline: none; border-bottom: 2px solid var(--primary-color); }
+
+        /* 底部：數值組 */
+        .value-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .value-input, .max-input {
+            width: 42px;
+            padding: 8px 2px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            -webkit-appearance: none;
+        }
+
+        .value-input { color: var(--primary-color); background: #f9fcff; }
+        .max-input { color: #888; background: #fdfdfd; }
+
+        .divider { color: #bbb; font-size: 12px; }
+
+        /* 新增按鈕：固定在底部 */
+        .btn-add-main {
+            margin-top: 30px;
+            padding: 14px 50px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+            position: sticky;
+            bottom: 20px;
+        }
+
+        .sortable-ghost { opacity: 0.3; background: #d0e3ff; border: 2px dashed var(--primary-color); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>能力統計表</h2>
-        <div id="counterList"></div>
-        <div class="btn-group">
-            <button class="action-btn add-btn" onclick="addRow()">+ 新增能力</button>
-            <button class="action-btn clear-btn" onclick="clearAll()">重置清單</button>
-        </div>
-    </div>
-    <!-- JavaScript 部分與之前相同，僅需確保 storageKey 區分開來 -->
+
+    <h2>能力統計表</h2>
+
+    <div id="stats-container"></div>
+
+    <button class="btn-add-main" onclick="addStat()">＋ 新增能力項目</button>
+
     <script>
-        const storageKey = 'ability_mobile_v1';
-        let statsData = JSON.parse(localStorage.getItem(storageKey)) || [{ name: '力量', current: 10, max: 20 }];
+        const storageKey = 'stats_mobile_v4';
+        let statsData = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        const container = document.getElementById('stats-container');
+
         function render() {
-            const list = document.getElementById('counterList');
-            list.innerHTML = '';
+            container.innerHTML = '';
             statsData.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = 'counter-row';
-                row.innerHTML = `
-                    <input type="text" class="item-input" value="${item.name}" oninput="updateData(${index}, 'name', this.value)">
-                    <div class="controls-group">
-                        <input type="number" class="num-input current-input" value="${item.current}" oninput="updateData(${index}, 'current', this.value)" onblur="validateAndRender(${index})">
-                        <div class="arrow-buttons">
-                            <button class="arrow-btn" onclick="changeCount(${index}, 1)">▲</button>
-                            <button class="arrow-btn" onclick="changeCount(${index}, -1)">▼</button>
-                        </div>
-                        <span class="divider">/</span>
-                        <input type="number" class="num-input max-input" value="${item.max}" oninput="updateData(${index}, 'max', this.value)" onblur="validateAndRender(${index})">
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="drag-handle">⠿</div>
+                        <button class="btn-del" onclick="deleteStat(${index})">×</button>
                     </div>
-                    <button class="del-btn" onclick="deleteRow(${index})">✕</button>
+                    <input type="text" class="name-input" value="${item.name}" 
+                           placeholder="項目名稱" onchange="updateData(${index}, 'name', this.value)">
+                    <div class="value-group">
+                        <input type="number" class="value-input" value="${item.value}" inputmode="numeric"
+                               onchange="updateData(${index}, 'value', this.value)">
+                        <span class="divider">/</span>
+                        <input type="number" class="max-input" value="${item.max}" inputmode="numeric"
+                               onchange="updateData(${index}, 'max', this.value)">
+                    </div>
                 `;
-                list.appendChild(row);
+                container.appendChild(card);
             });
-            save();
         }
-        function changeCount(i, d) { 
-            let item = statsData[i];
-            let n = parseInt(item.current || 0) + d;
-            if (n < 0) n = 0;
-            if (item.max > 0 && n > item.max) n = item.max;
-            item.current = n; render();
-        }
-        function updateData(i, f, v) { 
-            if (f === 'name') statsData[i].name = v;
-            else statsData[i][f] = v === '' ? '' : parseInt(v);
-            save();
-        }
-        function validateAndRender(i) {
-            let it = statsData[i];
-            if (it.current === '') it.current = 0;
-            if (it.max === '') it.max = 0;
-            if (it.max > 0 && it.current > it.max) it.current = it.max;
+
+        function updateData(index, field, val) {
+            if (field === 'value') {
+                let num = parseInt(val) || 0;
+                if (num < 0) num = 0;
+                if (num > statsData[index].max) num = statsData[index].max;
+                statsData[index].value = num;
+            } else if (field === 'max') {
+                let m = parseInt(val) || 1;
+                if (m < 1) m = 1;
+                statsData[index].max = m;
+                if (statsData[index].value > m) statsData[index].value = m;
+            } else {
+                statsData[index].name = val;
+            }
+            saveToStorage();
             render();
         }
-        function addRow() { statsData.push({ name: '', current: 0, max: 0 }); render(); }
-        function deleteRow(i) { statsData.splice(i, 1); render(); }
-        function clearAll() { if(confirm('重置嗎？')) { statsData = [{ name: '', current: 0, max: 0 }]; render(); } }
-        function save() { localStorage.setItem(storageKey, JSON.stringify(statsData)); }
+
+        function saveToStorage() {
+            localStorage.setItem(storageKey, JSON.stringify(statsData));
+        }
+
+        // 初始化拖拽 (SortableJS)
+        new Sortable(container, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            delay: 50, // 稍微延遲以區分捲動與拖拽
+            onEnd: function() {
+                const newOrder = [];
+                document.querySelectorAll('.stat-card').forEach(card => {
+                    const name = card.querySelector('.name-input').value;
+                    const value = parseInt(card.querySelector('.value-input').value);
+                    const max = parseInt(card.querySelector('.max-input').value);
+                    newOrder.push({ name, value, max });
+                });
+                statsData = newOrder;
+                saveToStorage();
+            }
+        });
+
+        function addStat() {
+            statsData.push({ name: '新能力', value: 0, max: 100 });
+            saveToStorage();
+            render();
+            window.scrollTo(0, document.body.scrollHeight); // 自動捲到最下方
+        }
+
+        function deleteStat(index) {
+            if (confirm('確定刪除？')) {
+                statsData.splice(index, 1);
+                saveToStorage();
+                render();
+            }
+        }
+
         render();
     </script>
 </body>
